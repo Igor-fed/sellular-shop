@@ -298,6 +298,24 @@ footer a {
     margin-bottom: 15px;
 }
 
+.procedure-selector {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.procedure-selector label {
+    font-weight: 600;
+}
+
+.procedure-selector select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
 .procedure-form {
     display: flex;
     flex-wrap: wrap;
@@ -308,7 +326,6 @@ footer a {
     background-color: var(--light-gray);
     border-radius: 10px;
 }
-
 .procedure-name {
     font-weight: bold;
     min-width: 160px;
