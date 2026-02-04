@@ -14,26 +14,35 @@ const tableLabels = {
     contracts: 'Договоры',
     products: 'Товары',
     services: 'Услуги',
-    sales: 'Sales',
-    sale_items: 'Sale items'
+    sales: 'Продажи',
+    sale_items: 'Позиции продаж'
 };
 
 const blockedProcedurePatterns = [
-    'add_employee',
-    'employee_add',
-    'добавить_работника',
-    'change_service_tariff',
-    'update_service_tariff',
-    'изменить_тариф_услуги',
-    'change_product_price',
-    'update_product_price',
-    'изменить_цену_товара'
+    'sp_create_employee',
+    'sp_set_employee_status',
+    'sp_update_product_price',
+    'sp_update_service_tarifff',
+    'sp_update_service_tariff'
+
 ];
 
 let availableProcedures = [];
 let procedureParams = {};
 let currentView = 'products';
+let activeProcedure = null;
 
+const procedureLabels = [
+    'Добавить товар в продажу',
+    'Добавить услугу в продажу',
+    'Добавить клиента',
+    'Создать договор',
+    'Создание продажи',
+    'Завершение продажи',
+    'Обновить статус договора'
+
+    // Add specific Russian labels here when known, keyed by procedure name.
+];
 function normalizeName(name) {
     return name.toLowerCase().replace(/\s+/g, '_');
 }
@@ -49,6 +58,7 @@ function loadMetadata() {
         .then(data => {
             availableProcedures = (data.procedures || []).filter(proc => !isBlockedProcedure(proc));
             procedureParams = data.procedureParams || {};
+            activeProcedure = availableProcedures[0] || null;
         });
 }
 
@@ -64,6 +74,7 @@ function loadView(view) {
             const title = document.getElementById('table-title');
             title.textContent = tableLabels[view] || view.replace(/_/g,' ').toUpperCase();
 
+            table.innerHTML = '';
             const thead = table.createTHead();
             thead.innerHTML = '';
             const tbody = table.createTBody();
@@ -106,6 +117,13 @@ function createInputForParam(param) {
     return input;
 }
 
+function getProcedureLabel(proc, index) {
+    if (procedureLabels[proc]) {
+        return procedureLabels[proc];
+    }
+    return `${procedureLabels[index]}`;
+}
+
 function renderProcedureControls() {
     const container = document.getElementById('procedure-controls');
     container.innerHTML = '';
@@ -118,14 +136,43 @@ function renderProcedureControls() {
     title.textContent = 'Процедуры';
     container.appendChild(title);
 
-    availableProcedures.forEach(proc => {
+    const selector = document.createElement('div');
+    selector.className = 'procedure-selector';
+
+    const selectorLabel = document.createElement('label');
+    selectorLabel.textContent = 'Выберите процедуру:';
+    selectorLabel.setAttribute('for', 'procedure-select');
+    selector.appendChild(selectorLabel);
+
+    const select = document.createElement('select');
+    select.id = 'procedure-select';
+    availableProcedures.forEach((proc, index) => {
+        const option = document.createElement('option');
+        option.value = proc;
+        option.textContent = getProcedureLabel(proc, index);
+        if (proc === activeProcedure) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+    select.addEventListener('change', () => {
+        activeProcedure = select.value;
+        renderProcedureControls();
+    });
+    selector.appendChild(select);
+    container.appendChild(selector);
+
+    const proceduresToShow = activeProcedure ? [activeProcedure] : [];
+    proceduresToShow.forEach(proc => {
+        const index = availableProcedures.indexOf(proc);
         const form = document.createElement('form');
         form.className = 'procedure-form';
         form.dataset.procedure = proc;
 
         const label = document.createElement('div');
         label.className = 'procedure-name';
-        label.textContent = proc;
+        label.textContent = getProcedureLabel(proc, index === -1 ? 0 : index);
+        label.title = proc;
         form.appendChild(label);
 
         const params = (procedureParams[proc] || []).filter(param => param.mode !== 'OUT');
